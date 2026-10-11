@@ -230,6 +230,8 @@ function snapshotCommit(sd){
   sd.order.forEach(s=>s&&u.add(s.pid));
   sd.used=[...u];
 }
+// 打順から外れた（代打・代走・交代で替わられた）が、まだ守備位置にいる選手
+const isOut=(sd,pid)=>!!sd.base&&sd.used.includes(pid)&&idxInOrder(sd,pid)<0;
 const isSub=(sd,pid)=>{
   if(sd.subs&&sd.subs.includes(pid))return true;
   if(sd.starters&&!sd.starters.includes(pid))return true;
@@ -374,7 +376,7 @@ function headerHTML(){
   if(ui.tab==='game'&&S.game){
     const g=S.game;
     return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
-    <div class="inn">${g.inning||1}回${g.half==='bottom'?'裏':'表'}<small>${isBatting('my')?'⚾ 攻撃':'守備'}（${esc(tName(sdOf('my')))}）</small></div>
+    <div class="inn">${g.inning||1}回${g.half==='bottom'?'裏':'表'}<small>${isBatting('my')?'⚾ 攻撃':'守備'}（${esc(S.club||tName(sdOf('my')))}${S.club?'／'+esc(tName(sdOf('my'))):''}）</small></div>
     <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu" style="font-size:13px">説明・変更</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
@@ -388,7 +390,7 @@ function fieldHTML(sd,live){
   return `<div class="field"><div class="dia"></div>${POSKEYS.map(k=>{
     const pid=sd.field[k],p=P(sd,pid),[x,y]=FXY[k];
     const chg=live&&sd.base&&sd.base.field[k]!==pid;
-    const sb=!!p&&isSub(sd,pid);
+    const sb=!!p&&isOut(sd,pid);
     return `<div class="fslot ${p?'':'empty'} ${chg?'chg':''} ${sb?'sub':''}" style="left:${x}%;top:${y}%" data-drop="field:${k}" ${p?`data-pid="${p.id}" data-from="field:${k}"`:''}><span class="pl">${POS[k].s}</span><b>${p?esc(dispName(p)):'−'}</b>${sb?'<u class="sx">交</u>':''}</div>`;
   }).join('')}</div>`;
 }
@@ -403,7 +405,7 @@ function orderHTML(sd,live){
     if(!p)return `<div class="orow empty" data-drop="order:${i}"><em>${i+1}</em>空き</div>`;
     const cur=sd.cur===i,nx=nxt===i&&!cur;
     const o2=(o&&o.pid===s.pid)?o.pos:'';
-    const mk=(s.pos==='代打'||o2==='代打')?'<u class="mk ph">打</u>':(s.pos==='代走'||o2==='代走')?'<u class="mk pr">走</u>':(isSub(sd,s.pid)?'<u class="mk sb">交</u>':'');
+    const mk=(s.pos==='代打'||o2==='代打')?'<u class="mk ph">打</u>':(s.pos==='代走'||o2==='代走')?'<u class="mk pr">走</u>':'';
     return `<div class="orow ${chg?'chg':''} ${cur?'cur':''} ${nx?'nxt':''}" data-drop="order:${i}" data-pid="${p.id}" data-from="order:${i}" data-tap="batter:${i}"><em>${i+1}</em><small>${esc(lab(s.pos)||'守備未定')}</small>${mk}<b>${esc(dispName(p))}</b>${cur?'<i>今</i>':nx?'<i>次</i>':''}<span>${p.no?'#'+esc(p.no):''}</span></div>`;
   }).join('')}</div>`;
 }
@@ -420,16 +422,17 @@ function nextIdx(sd){
 function rightHTML(sd){
   const live=S.game.phase==='live';
   const bench=plist(sd).filter(p=>sd.attend.includes(p.id)&&!placed(sd,p.id)&&!sd.used.includes(p.id)&&!(parseInt(p.grade,10)>6));
-  const gone=plist(sd).filter(p=>!placed(sd,p.id)&&sd.used.includes(p.id));
+  const gone=plist(sd).filter(p=>sd.used.includes(p.id)&&idxInOrder(sd,p.id)<0);
   const sub=live?`<div class="submode"><button class="smb ph ${ui.sub==='ph'?'on':''}" data-act="sub:ph">代打</button><button class="smb pr ${ui.sub==='pr'?'on':''}" data-act="sub:pr">代走</button></div>${ui.sub?`<div class="hint" style="color:#c2255c;font-weight:700">${ui.sub==='ph'?'代打':'代走'}ON：ベンチの選手を、交代される選手へドラッグ</div>`:''}`:'';
   return `<div class="right" data-drop="bench">${sub}
-    <div class="bench" data-drop="bench"><h4>ベンチ（${bench.length}）</h4>${bench.map(p=>mcard(p,'bench',sd)).join('')||'<div class="hint">'+(live?'ベンチは空です':'全員出場中')+'</div>'}</div>${gone.length?`<div class="bench gone" data-drop="bench"><h4>交代した選手（${gone.length}）</h4>${gone.map(p=>mcard(p,'bench',sd)).join('')}</div>`:''}</div>`;
+    <div class="bench" data-drop="bench"><h4>ベンチ（${bench.length}）</h4>${bench.map(p=>mcard(p,'bench',sd)).join('')||'<div class="hint">'+(live?'ベンチは空です':'全員出場中')+'</div>'}</div>${gone.length?`<div class="bench gone" data-drop="bench"><h4>交代した選手（${gone.length}）</h4>${gone.map(p=>placed(sd,p.id)?`<div class="mcard" style="touch-action:auto"><span class="grip" style="visibility:hidden"></span><div class="mc"><b>${esc(dispName(p))}</b><small>守備中</small></div></div>`:mcard(p,'bench',sd)).join('')}</div>`:''}</div>`;
 }
 function startScreen(){
   const opts=sel=>S.teams.map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(t.name)}</option>`).join('');
   if(S.teams.length<1)return `<div class="pad"><div class="note">試合を始めるには、先にチームと選手を登録してください。</div><button class="btn g w" data-act="tab:players">チーム・選手へ</button></div>`;
   return `<div class="pad form"><h3 style="margin:6px 0">試合を始める</h3>
-  <label>自チーム</label><select id="g-my">${opts(ui.pickMy||S.teams[0].id)}</select>
+  <label>クラブ名（アナウンスで読む名前・全チーム共通）</label><input type="text" id="g-club" value="${esc(S.club||'')}" placeholder="例：〇〇クラブ">
+  <label>今日の出場チーム（レギュラー・ジュニアなど）</label><select id="g-my">${opts(ui.pickMy||S.teams[0].id)}</select>
   <label>相手チーム名（任意）</label><input type="text" id="g-opp" placeholder="例：〇〇タイガース">
   <label>本日の第何試合（任意）</label><input type="text" id="g-no" inputmode="numeric" placeholder="例：1">
   <label>自チームは</label><select id="g-first"><option value="1">先攻（1回の表が攻撃）</option><option value="0">後攻（1回の裏が攻撃）</option></select>
@@ -703,6 +706,7 @@ function act(a){
     case 'side':S.game.side=arg;save();render();break;
     case 'game-new':{
       const my=$('#g-my').value,opp=$('#g-opp').value.trim(),no=$('#g-no').value.trim();
+      const clubIn=$('#g-club').value.trim();if(clubIn)S.club=clubIn;
       S.game={myId:my,myFirst:$('#g-first').value==='1',inning:1,half:'top',phase:'setup',started:false,attending:true,introPending:false,vars:{'相手':opp,'試合番号':no},side:'my',sides:{my:newSide(my)},last:null};
       save();render();break;}
     case 'close':ui.modal=ui.ret||null;ui.ret=null;render();break;
