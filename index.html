@@ -230,7 +230,24 @@ function snapshotCommit(sd){
   sd.order.forEach(s=>s&&u.add(s.pid));
   sd.used=[...u];
 }
-const isSub=(sd,pid)=>!!sd.starters&&!sd.starters.includes(pid);
+const isSub=(sd,pid)=>{
+  if(sd.subs&&sd.subs.includes(pid))return true;
+  if(sd.starters&&!sd.starters.includes(pid))return true;
+  if(sd.base){ // 「完了」前に入れた選手（まだ打順に確定していない）
+    const inBase=sd.base.order.some(x=>x&&x.pid===pid)||POSKEYS.some(k=>sd.base.field[k]===pid);
+    if(!inBase)return true;
+  }
+  return false;
+};
+function recordSubs(sd){
+  if(!sd.base)return;
+  sd.subs=sd.subs||[];
+  const bo=new Set(sd.base.order.filter(Boolean).map(x=>x.pid));
+  POSKEYS.forEach(k=>{if(sd.base.field[k])bo.add(sd.base.field[k]);});
+  const add=pid=>{if(pid&&!bo.has(pid)&&!sd.subs.includes(pid))sd.subs.push(pid);};
+  sd.order.forEach(x=>x&&add(x.pid));
+  POSKEYS.forEach(k=>add(sd.field[k]));
+}
 const dirty=sd=>sd.base&&JSON.stringify(sd.base)!==JSON.stringify({field:sd.field,ph:sd.ph,pr:sd.pr,order:sd.order});
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2600);}
 function purgePlayer(id){
@@ -717,7 +734,7 @@ function act(a){
       break;}
     case 'undo':{ui.sub=null;const sd=curSd();sd.field=clone(sd.base.field);sd.ph=clone(sd.base.ph);sd.pr=clone(sd.base.pr);sd.order=clone(sd.base.order);save();render();break;}
     case 'done':{
-      ui.sub=null;const sd=curSd(),L=buildChanges(sd);
+      ui.sub=null;const sd=curSd(),L=buildChanges(sd);recordSubs(sd);
       snapshotCommit(sd);
       if(!L.length){save();render();toast('セリフなし（枠の移動のみ）');break;}
       const dsc='交代の入れ替えがすべて終わってから読みます。名前は交代される選手→入る選手の順に読みます。';S.game.last={title:'選手交代',lines:L,desc:dsc};save();showLines('選手交代',L,dsc);break;}
