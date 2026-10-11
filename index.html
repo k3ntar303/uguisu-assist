@@ -209,6 +209,7 @@ const P=(sd,id)=>plist(sd).find(p=>p.id===id);
 const tName=sd=>(teamOf(sd.teamId)||{name:'チーム'}).name;
 const aName=sd=>{const t=teamOf(sd.teamId);return S.club||(t?(t.announce||t.name):'チーム');};
 const newSide=tid=>({teamId:tid,field:Object.fromEntries(POSKEYS.map(k=>[k,null])),ph:[],pr:[],order:Array(9).fill(null),base:null,used:[],cur:-1,attend:((teamOf(tid)||{members:[]}).members.filter(id=>{const p=S.players.find(x=>x.id===id);return p&&!(parseInt(p.grade,10)>6);})),noSpoken:[]});
+const isBatting=k=>(G().half==='top')===((k==='my')===G().myFirst);
 const idxInOrder=(sd,pid)=>sd.order.findIndex(s=>s&&s.pid===pid);
 const fieldPosOf=(sd,pid)=>POSKEYS.find(k=>sd.field[k]===pid)||null;
 const placed=(sd,pid)=>!!fieldPosOf(sd,pid)||sd.ph.includes(pid)||sd.pr.includes(pid)||idxInOrder(sd,pid)>=0;
@@ -282,6 +283,8 @@ function varInput(k){
   const g=S.game||{},v=g.vars||{};
   const own=g.sides?aName(g.sides.my):'自チーム',opp=v['相手']||'相手チーム';
   if(k==='自チーム')return esc(own);
+  if(k==='回')return String(g.inning||1);
+  if(k==='表裏')return g.half==='bottom'?'裏':'表';
   if(k==='先攻チーム')return esc(g.myFirst===false?opp:own);
   if(k==='後攻チーム')return esc(g.myFirst===false?own:opp);
   let val=v[k];
@@ -370,7 +373,9 @@ function buildChanges(sd){
 function headerHTML(){
   if(ui.tab==='game'&&S.game){
     const g=S.game;
-    return `<header class="top"><h1>${esc(tName(sdOf('my')))}<small style="font-weight:400;font-size:12px;margin-left:8px">${g.myFirst?'先攻':'後攻'}</small></h1><button class="hb" data-act="menu" style="font-size:13px">説明・変更</button></header>`;
+    return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
+    <div class="inn">${g.inning||1}回${g.half==='bottom'?'裏':'表'}<small>${isBatting('my')?'⚾ 攻撃':'守備'}（${esc(tName(sdOf('my')))}）</small></div>
+    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu" style="font-size:13px">説明・変更</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
     const t=teamOf(ui.teamId);
@@ -427,7 +432,7 @@ function startScreen(){
   <label>自チーム</label><select id="g-my">${opts(ui.pickMy||S.teams[0].id)}</select>
   <label>相手チーム名（任意）</label><input type="text" id="g-opp" placeholder="例：〇〇タイガース">
   <label>本日の第何試合（任意）</label><input type="text" id="g-no" inputmode="numeric" placeholder="例：1">
-  <label>自チームは</label><select id="g-first"><option value="1">先攻</option><option value="0">後攻</option></select>
+  <label>自チームは</label><select id="g-first"><option value="1">先攻（1回の表が攻撃）</option><option value="0">後攻（1回の裏が攻撃）</option></select>
   <button class="btn pri w" style="margin-top:20px;padding:14px" data-act="game-new">出席者の選択へ</button></div>`;
 }
 function attendView(sd){
@@ -636,7 +641,7 @@ function dropToOrder(sd,pid,i,from,key){
   const old=sd.order[i];
   let pos=fieldPosOf(sd,pid)||(sd.ph.includes(pid)?'代打':sd.pr.includes(pid)?'代走':'');
   if(from==='bench'){
-    if(isLive()){
+    if(isLive()&&isBatting(key)){
       if(!old){toast('空いている打順には入れられません');return false;}
       if(!ui.sub){ui.modal={type:'subpick',pid,i};render();return false;}
       sd.order[i]={pid,pos:ui.sub==='ph'?'代打':'代走'};
@@ -688,7 +693,7 @@ function nextBatter(sd,i,d){
   for(let k=1;k<=n;k++){const j=((i+d*k)%n+n)%n;if(sd.order[j]&&P(sd,sd.order[j].pid))return j;}
   return i;
 }
-function setBattingSide(){ui.sub=null;S.game.side='my';S.game.introPending=true;}
+function setBattingSide(){ui.sub=null;S.game.side='my';S.game.introPending=isBatting('my');}
 
 function act(a){
   const [k,arg]=a.split(/:(.*)/);
@@ -705,7 +710,9 @@ function act(a){
     case 'help':{const pr=arg.split(':');ui.modal={type:'help',page:pr[0],step:+pr[1]||0};render();break;}
     case 'sub':ui.sub=ui.sub===arg?null:arg;render();break;
     case 'subdo':{const m=ui.modal,sd=curSd();const o0=sd.order[m.i];sd.order[m.i]={pid:m.pid,pos:arg==='ph'?'代打':arg==='pr'?'代走':(o0?o0.pos:'')};ui.modal=null;save();render();break;}
-    case 'bfirst':openBatter(nextIdx(curSd()));ui.modal.intro=true;render();break;
+    case 'half-next':{const g=S.game;if(g.half==='top')g.half='bottom';else{g.half='top';g.inning=(g.inning||1)+1;}setBattingSide();save();render();break;}
+    case 'half-prev':{const g=S.game;if(g.half==='bottom')g.half='top';else if((g.inning||1)>1){g.half='bottom';g.inning--;}setBattingSide();save();render();break;}
+    case 'bfirst':openBatter(nextIdx(curSd()));break;
     case 'notes':ui.modal={type:'notes'};render();break;
     case 'note':{const n=S.notes.find(x=>x.id===arg);if(n){showLines(n.title,noteToLines(n),n.desc);if(n.id==='n_end'){ui.modal.endBtn=true;render();}}break;}
     case 'tg':ui.modal[arg]=!ui.modal[arg];render();break;
@@ -916,8 +923,8 @@ const GUIDE=[
   d:['試合開始の放送をします。','自チームが後攻で先に守るときは、続けて守備位置の紹介も読みます。'],
   btn:[['note:n_start','試合開始を開く'],['note:n_def','守備位置の紹介を開く（後攻のとき）']]},
  {t:'攻撃開始（各回の最初の打者）',when:'投球練習が終わり、キャッチャーが2塁に送球したら',
-  d:['「○回の表（裏）、○○の攻撃は、」に続けて、先頭の打者を紹介します。','回と表・裏は、文中の黄色い欄に入力します（スコアボードなどを見て入れます）。','前の回の続きから始まるときは、「次」と表示されている打者から読みます。'],
-  btn:[['bfirst','次の打者を紹介する（回の頭出し付き）']]},
+  d:['「○回の表（裏）、○○の攻撃は、」に続けて、先頭の打者を紹介します。','上の「◀」「▶」で回と表・裏を合わせておくと、その回の先頭の打者にだけ、自動でこの言葉が付きます。','前の回の続きから始まるときは、「次」と表示されている打者から読みます。'],
+  btn:[['bfirst','次の打者を紹介する']]},
  {t:'打席ごとの打者紹介',when:'打者が打席に入るたび',
   d:['打順のカードをタップすると、その打者の紹介が出ます。','背番号は、打順が一巡するまで読みます（一巡後は自動で出ません。画面の「背番号」ボタンで入り切りできます）。','「次 ▶」ボタンで次の打者に進めます。青が「今の打者」、黄色が「次の打者」です。']},
  {t:'選手交代',when:'交代が告げられ、入れ替えが済んだとき',
@@ -940,7 +947,8 @@ const HOWTO=[
  ['ドラッグのしかた','ベンチのカードは、左端の「⠿」をつかむと、どの方向にもすぐ動かせます。カードを長押ししても動かせます。右の欄は、上下になぞるとスクロールします。'],
  ['編成（試合前）','ベンチのカードを守備位置へドラッグし、そのカードを打順の枠へドラッグするとコピーされます。打順の枠に別の選手を重ねると置き換わります。'],
  ['スタメン確定','編成ができたら、画面下の「スタメン確定 → 発表」を押します。'],
- ['打者紹介','打順のカードをタップします。画面の「前」「次」で打者を移動できます。青が今の打者、黄色が次の打者です。次のイニングでも続きから表示されます。攻撃の最初の打者には、画面の「回の頭出し」ボタンで「○回の表、○○の攻撃は」が付きます。'],
+ ['打者紹介','打順のカードをタップします。画面の「前」「次」で打者を移動できます。青が今の打者、黄色が次の打者です。次のイニングでも続きから表示されます。その回の最初の打者にだけ、「○回の表、○○の攻撃は」が付きます。'],
+ ['攻守の切り替え','上の「◀」「▶」で、回と表・裏（攻撃・守備）を切り替えます。切り替えると、その回の先頭の打者にだけ「○回の表、○○の攻撃は」が付きます。'],
  ['代打・代走','右の「代打」「代走」ボタンをONにして、ベンチの選手を、交代される打者のカードへドラッグします。ONにしないでドラッグすると、代打・代走・守備交代から選ぶ画面が出ます。'],
  ['守備交代・ポジション変更','ベンチの選手を守備位置へドラッグすると守備交代です。守備位置のカードどうしを重ねると入れ替わります。代打で出た選手は、打順のカードを守備位置へドラッグするとそのまま守備につきます。'],
  ['完了とやり直し','入れ替えると、変わったカードにオレンジの枠が付きます。全部終わったら「完了 → セリフ」でまとめて読む文が出ます。間違えたら「やり直し」で、直前の完了時点に戻ります。'],
