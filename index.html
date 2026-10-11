@@ -55,7 +55,9 @@ header.top .inn small{display:block;font-weight:400;font-size:11px;opacity:.9}
 .frame h4,.bench h4{margin:0 0 3px;font-size:11px;color:var(--mut)}
 .frame.ph h4{color:#c2255c}.frame.pr h4{color:#0b7285}
 .bench{min-height:90px}
-.mcard{background:#fff8e1;border:1.5px solid #e0c97a;border-radius:7px;padding:4px 6px;margin-bottom:4px;line-height:1.2;touch-action:pan-y}
+.mcard{background:#fff8e1;border:1.5px solid #e0c97a;border-radius:7px;padding:0 6px 0 0;margin-bottom:4px;line-height:1.2;touch-action:pan-y;display:flex;align-items:stretch}
+.mcard .grip{width:26px;flex-shrink:0;display:grid;place-items:center;background:#f1dfa0;border-radius:6px 0 0 6px;color:#8a6d00;font-size:16px;touch-action:none;margin-right:5px}
+.mcard .mc{padding:4px 0;min-width:0}
 .mcard b{font-size:14px;display:block}
 .mcard small{font-size:10px;color:var(--mut)}
 .mcard u{font-size:9px;text-decoration:none;background:#868e96;color:#fff;border-radius:4px;padding:0 4px;margin-left:3px}
@@ -238,7 +240,7 @@ function headerHTML(){
     const g=S.game,bk=g.half==='top'?firstKey():(firstKey()==='my'?'opp':'my');
     return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
     <div class="inn">${g.inning}回${g.half==='top'?'表':'裏'}<small>${esc(tName(sdOf(bk)))}の攻撃</small></div>
-    <button class="hb" data-act="half-next">▶</button></header>`;
+    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="notes">案内</button><button class="hb" data-act="menu">⋯</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
     const t=teamOf(ui.teamId);
@@ -252,7 +254,7 @@ function fieldHTML(sd,live){
     const pid=sd.field[k],p=P(sd,pid),[x,y]=FXY[k];
     const chg=live&&sd.base&&sd.base.field[k]!==pid;
     return `<div class="fslot ${p?'':'empty'} ${chg?'chg':''}" style="left:${x}%;top:${y}%" data-drop="field:${k}" ${p?`data-pid="${p.id}" data-from="field:${k}"`:''}><span class="pl">${POS[k].s}</span><b>${p?esc(dispName(p)):'−'}</b></div>`;
-  }).join('')}<button class="fbtn l" data-act="notes">案内</button><button class="fbtn r" data-act="menu">⋯</button></div>`;
+  }).join('')}</div>`;
 }
 function orderHTML(sd,live){
   const n=sd.order.length;
@@ -269,7 +271,7 @@ function orderHTML(sd,live){
 }
 function mcard(p,from,sd){
   const used=sd.used.includes(p.id)&&from==='bench';
-  return `<div class="mcard" data-pid="${p.id}" data-from="${from}" data-scroll="1"><b>${esc(dispName(p))}${used?'<u>出場済</u>':''}</b><small>${esc(gl(p.grade))} ${p.no?'#'+esc(p.no):''}</small></div>`;
+  return `<div class="mcard" data-pid="${p.id}" data-from="${from}" data-scroll="1"><span class="grip">⠿</span><div class="mc"><b>${esc(dispName(p))}${used?'<u>出場済</u>':''}</b><small>${esc(gl(p.grade))} ${p.no?'#'+esc(p.no):''}</small></div></div>`;
 }
 function rightHTML(sd){
   const ph=sd.ph.map(id=>P(sd,id)).filter(Boolean),pr=sd.pr.map(id=>P(sd,id)).filter(Boolean);
@@ -571,8 +573,8 @@ document.addEventListener('pointerdown',e=>{
   if(ui.modal||(e.pointerType==='mouse'&&e.button!==0))return;
   const el=e.target.closest('[data-pid]');if(!el)return;
   drag={pid:el.dataset.pid,from:el.dataset.from,tap:el.dataset.tap,el,started:false,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,id:e.pointerId,
-        scrolly:e.pointerType!=='mouse'&&!!el.closest('.right')};
-  if(drag.scrolly)drag.timer=setTimeout(()=>{if(drag&&!drag.started)beginDrag(drag.x,drag.y);},260);
+        scrolly:e.pointerType!=='mouse'&&!!el.closest('.right')&&!e.target.closest('.grip')};
+  if(drag.scrolly)drag.timer=setTimeout(()=>{if(drag&&!drag.started)beginDrag(drag.x,drag.y);},220);
 });
 document.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.id)return;
@@ -582,7 +584,7 @@ document.addEventListener('pointermove',e=>{
     if(drag.scrolly){
       if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){clearTimeout(drag.timer);drag=null;return;}  // 縦スクロール
       if(Math.abs(dx)>10)beginDrag(e.clientX,e.clientY);
-    }else if(Math.hypot(dx,dy)>7)beginDrag(e.clientX,e.clientY);
+    }else if(Math.hypot(dx,dy)>5)beginDrag(e.clientX,e.clientY);
     return;
   }
   moveGhost(e.clientX,e.clientY);
