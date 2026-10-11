@@ -140,6 +140,7 @@ try{
 }catch(e){}
 // 毎年4/1に学年を繰り上げ
 (function(){const now=fiscalYear();if(S.fy<now){const diff=now-S.fy;S.teams.forEach(t=>t.players.forEach(p=>{const g=parseInt(p.grade,10);if(g)p.grade=String(g+diff);}));S.fy=now;}})();
+if(S.game){S.game.side='my';if(!S.game.sides.my)S.game=null;}
 const ui={tab:'game',teamId:null,modal:null};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 const gl=g=>{const n=parseInt(g,10);return !n?'':n>6?'卒団':n+'年';};
@@ -154,7 +155,6 @@ const plist=sd=>(teamOf(sd.teamId)||{players:[]}).players;
 const P=(sd,id)=>plist(sd).find(p=>p.id===id);
 const tName=sd=>(teamOf(sd.teamId)||{name:'チーム'}).name;
 const newSide=tid=>({teamId:tid,field:Object.fromEntries(POSKEYS.map(k=>[k,null])),ph:[],pr:[],order:Array(9).fill(null),base:null,used:[],cur:-1});
-const firstKey=()=>G().myFirst?'my':'opp';
 const isBatting=k=>(G().half==='top')===((k==='my')===G().myFirst);
 const idxInOrder=(sd,pid)=>sd.order.findIndex(s=>s&&s.pid===pid);
 const fieldPosOf=(sd,pid)=>POSKEYS.find(k=>sd.field[k]===pid)||null;
@@ -240,9 +240,9 @@ function buildChanges(sd){
 /* ===== 描画 ===== */
 function headerHTML(){
   if(ui.tab==='game'&&S.game){
-    const g=S.game,bk=g.half==='top'?firstKey():(firstKey()==='my'?'opp':'my');
+    const g=S.game;
     return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
-    <div class="inn">${g.inning}回${g.half==='top'?'表':'裏'}<small>${esc(tName(sdOf(bk)))}の攻撃</small></div>
+    <div class="inn">${g.inning}回${g.half==='top'?'表':'裏'}<small>${isBatting('my')?'⚾ 攻撃':'守備'}（${esc(tName(sdOf('my')))}）</small></div>
     <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu">⋯</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
@@ -286,18 +286,17 @@ function rightHTML(sd){
 }
 function startScreen(){
   const opts=sel=>S.teams.map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(t.name)}</option>`).join('');
-  if(S.teams.length<2)return `<div class="pad"><div class="note">試合を始めるには、チームが2つ必要です（自チームと相手チーム）。<br>「チーム・選手」タブで登録してください。</div><button class="btn g w" data-act="tab:players">チーム・選手へ</button></div>`;
+  if(S.teams.length<1)return `<div class="pad"><div class="note">試合を始めるには、先にチームと選手を登録してください。</div><button class="btn g w" data-act="tab:players">チーム・選手へ</button></div>`;
   return `<div class="pad form"><h3 style="margin:6px 0">試合を始める</h3>
   <label>自チーム</label><select id="g-my">${opts(ui.pickMy||S.teams[0].id)}</select>
-  <label>相手チーム</label><select id="g-opp">${opts(ui.pickOpp||S.teams[1].id)}</select>
+  <label>相手チーム名（任意・案内文の{相手}に入ります）</label><input type="text" id="g-opp" placeholder="例：〇〇タイガース">
   <label>自チームは</label><select id="g-first"><option value="1">先攻（1回の表が攻撃）</option><option value="0">後攻（1回の裏が攻撃）</option></select>
   <button class="btn pri w" style="margin-top:20px;padding:14px" data-act="game-new">守備位置・打順の登録へ</button></div>`;
 }
 function gameView(){
   if(!S.game)return startScreen();
-  const g=S.game,key=g.side,sd=sdOf(key),live=g.phase==='live';
-  const tabs=['my','opp'].map(k=>{const s=sdOf(k);return `<button class="${k===key?'on':''}" data-act="side:${k}">${esc(tName(s))}${dirty(s)?' ●':''}<small>${isBatting(k)?'⚾ 攻撃':'守備'}</small></button>`;}).join('');
-  return `<div class="sidetabs">${tabs}</div><div class="game"><div class="left">${fieldHTML(sd,live)}<div class="lower"><div class="notecol">${S.notes.map(n=>`<button data-act="note:${n.id}">${esc(n.title)}</button>`).join('')||'<span class="hint">案内なし</span>'}</div>${orderHTML(sd,live)}</div></div>${rightHTML(sd)}</div>`;
+  const g=S.game,sd=sdOf('my'),live=g.phase==='live';
+  return `<div class="game"><div class="left">${fieldHTML(sd,live)}<div class="lower"><div class="notecol">${S.notes.map(n=>`<button data-act="note:${n.id}">${esc(n.title)}</button>`).join('')||'<span class="hint">案内なし</span>'}</div>${orderHTML(sd,live)}</div></div>${rightHTML(sd)}</div>`;
 }
 function teamsView(){
   if(!ui.teamId){
@@ -443,14 +442,11 @@ function nextBatter(sd,i,d){
   return i;
 }
 function fillNote(t){
-  const my=S.game?tName(sdOf('my')):'自チーム',op=S.game?tName(sdOf('opp')):'相手チーム';
+  const my=S.game?tName(sdOf('my')):'自チーム',op=(S.game&&S.game.oppName)||'相手チーム';
   return esc(t).replace(/\{自チーム\}/g,esc(my)).replace(/\{相手\}/g,esc(op));
 }
-function bothStarting(){
-  const a=firstKey(),b=a==='my'?'opp':'my';
-  return [...startingLines(sdOf(a)),...startingLines(sdOf(b))];
-}
-function setBattingSide(){S.game.side=isBatting('my')?'my':'opp';}
+function bothStarting(){return startingLines(sdOf('my'));}
+function setBattingSide(){S.game.side='my';}
 
 function act(a){
   const [k,arg]=a.split(/:(.*)/);
@@ -458,9 +454,8 @@ function act(a){
     case 'tab':ui.tab=arg;render();break;
     case 'side':S.game.side=arg;save();render();break;
     case 'game-new':{
-      const my=$('#g-my').value,opp=$('#g-opp').value;
-      if(my===opp){toast('自チームと相手チームは別のチームを選んでください');break;}
-      S.game={myId:my,oppId:opp,myFirst:$('#g-first').value==='1',inning:1,half:'top',phase:'setup',started:false,side:'my',sides:{my:newSide(my),opp:newSide(opp)},last:null};
+      const my=$('#g-my').value,opp=$('#g-opp').value.trim();
+      S.game={myId:my,oppName:opp,myFirst:$('#g-first').value==='1',inning:1,half:'top',phase:'setup',started:false,side:'my',sides:{my:newSide(my)},last:null};
       save();render();break;}
     case 'half-next':{const g=S.game;if(g.half==='top')g.half='bottom';else{g.half='top';g.inning++;}setBattingSide();save();render();break;}
     case 'half-prev':{const g=S.game;if(g.half==='bottom')g.half='top';else if(g.inning>1){g.half='bottom';g.inning--;}setBattingSide();save();render();break;}
@@ -472,8 +467,8 @@ function act(a){
     case 'bnav':{const sd=sdOf(ui.modal.key),j=nextBatter(sd,ui.modal.i,+arg);sd.cur=j;save();ui.modal.i=j;render();break;}
     case 'start':{
       const g=S.game;
-      if(!g.started){g.started=true;g.phase='live';snapshotCommit(sdOf('my'));snapshotCommit(sdOf('opp'));const L=bothStarting();g.last={title:'スタメン発表',lines:L};setBattingSide();save();showLines('スタメン発表',L);}
-      else{g.phase='live';snapshotCommit(sdOf('my'));snapshotCommit(sdOf('opp'));save();render();}
+      if(!g.started){g.started=true;g.phase='live';snapshotCommit(sdOf('my'));const L=bothStarting();g.last={title:'スタメン発表',lines:L};setBattingSide();save();showLines('スタメン発表',L);}
+      else{g.phase='live';snapshotCommit(sdOf('my'));save();render();}
       break;}
     case 'undo':{const sd=curSd();sd.field=clone(sd.base.field);sd.ph=clone(sd.base.ph);sd.pr=clone(sd.base.pr);sd.order=clone(sd.base.order);save();render();break;}
     case 'done':{
@@ -498,7 +493,7 @@ function act(a){
     case 'team-back':ui.teamId=null;render();break;
     case 'team-del':
       if(confirm('このチームと登録した選手をすべて削除します。よろしいですか？')){
-        if(S.game&&(S.game.myId===ui.teamId||S.game.oppId===ui.teamId))S.game=null;
+        if(S.game&&(S.game.myId===ui.teamId))S.game=null;
         S.teams=S.teams.filter(t=>t.id!==ui.teamId);ui.teamId=null;save();render();
       }break;
     case 'player-add':ui.modal={type:'player',pid:null};render();break;
@@ -545,7 +540,6 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='g-my')ui.pickMy=t.value;
-  else if(t.id==='g-opp')ui.pickOpp=t.value;
   else if(t.dataset&&t.dataset.nt){const n=S.notes.find(x=>x.id===t.dataset.nt);if(n){n.title=t.value;save();}}
   else if(t.dataset&&t.dataset.nx){const n=S.notes.find(x=>x.id===t.dataset.nx);if(n){n.text=t.value;save();}}
 });
