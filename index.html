@@ -10,10 +10,10 @@
 <style>
 :root{--g:#14532d;--g2:#1f7a45;--bg:#f3f1ea;--card:#fff;--ink:#1c1c1c;--mut:#6b6b6b;--acc:#e8590c;--blue:#1971c2;--line:#d8d4c6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 body{background:#222;font-family:system-ui,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
 button,input,select,textarea{font:inherit}
-#app{max-width:480px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+#app{max-width:480px;height:var(--app-h,100dvh);margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
 #root{display:flex;flex-direction:column;height:100%}
 header.top{background:var(--g);color:#fff;display:flex;align-items:center;gap:6px;padding:5px 8px;min-height:46px;flex-shrink:0}
 header.top h1{font-size:16px;margin:0;flex:1}
@@ -28,7 +28,7 @@ header.top .inn small{display:block;font-weight:400;font-size:11px;opacity:.9}
 .sidetabs button.on{border-color:var(--g);background:#e6f4ea;color:var(--g)}
 .game{flex:1;min-height:0;display:flex}
 .left{flex:1;min-width:0;display:flex;flex-direction:column;padding:4px}
-.field{position:relative;flex:0 0 40%;background:#cfe8c3;border-radius:10px;overflow:hidden}
+.field{position:relative;flex:0 0 33%;background:#cfe8c3;border-radius:10px;overflow:hidden}
 .dia{position:absolute;left:50%;top:62%;width:34%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(45deg);background:#d9b77e88;border:2px solid #ffffffaa}
 .fslot{position:absolute;transform:translate(-50%,-50%);width:62px;height:34px;background:#fff;border:2px solid var(--line);border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;line-height:1.1;overflow:hidden}
 .fslot .pl{font-size:9px;color:var(--g2);font-weight:700}
@@ -38,12 +38,12 @@ header.top .inn small{display:block;font-weight:400;font-size:11px;opacity:.9}
 .fbtn.l{left:3px}.fbtn.r{right:3px;border-color:#868e96;color:#495057}
 .lower{flex:1;min-height:0;display:flex;gap:4px;margin-top:4px}
 .notecol{width:76px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
-.notecol button{border:2px solid var(--g2);background:#fff;color:var(--g);border-radius:8px;font-size:11px;font-weight:700;line-height:1.25;padding:6px 2px;word-break:break-all;min-height:44px}
+.notecol button{margin:0;border:2px solid var(--g2);background:#fff;color:var(--g);border-radius:8px;font-size:11px;font-weight:700;line-height:1.25;padding:4px 2px;word-break:break-all;min-height:38px}
 .order{flex:1;min-width:0;min-height:0;display:grid;grid-template-rows:repeat(9,minmax(0,1fr));gap:3px}
 .orow{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:0 6px;touch-action:none;overflow:hidden;min-height:0}
 .orow.empty{border-style:dashed;background:#ffffff80;color:#999;font-size:12px}
 .orow em{font-style:normal;background:var(--g);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
-.orow small{font-size:9px;color:var(--g2);font-weight:700;min-width:48px;white-space:nowrap}
+.orow small{font-size:9px;color:var(--g2);font-weight:700;min-width:36px;white-space:nowrap}
 .orow b{font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .orow span{font-size:10px;color:var(--mut)}
 .orow i{font-style:normal;font-size:10px;font-weight:700;border-radius:4px;padding:0 5px}
@@ -136,6 +136,15 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
 <body>
 <div id="app"><div id="root"></div><div id="toast"></div></div>
 <script>
+/* 画面の実際の高さに合わせる（ヘッダー・フッターが隠れないように） */
+function setAppH(){
+  const h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  document.documentElement.style.setProperty('--app-h',Math.round(h)+'px');
+}
+setAppH();
+window.addEventListener('resize',setAppH);
+window.addEventListener('orientationchange',()=>setTimeout(setAppH,150));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',setAppH);
 /* ===== 定数 ===== */
 const POS={P:{s:'投',n:'ピッチャー'},C:{s:'捕',n:'キャッチャー'},'1B':{s:'一',n:'ファースト'},'2B':{s:'二',n:'セカンド'},'3B':{s:'三',n:'サード'},SS:{s:'遊',n:'ショート'},LF:{s:'左',n:'レフト'},CF:{s:'中',n:'センター'},RF:{s:'右',n:'ライト'}};
 const POSKEYS=Object.keys(POS);
@@ -720,7 +729,7 @@ function act(a){
     case 'notes':ui.modal={type:'notes'};render();break;
     case 'note':{const n=S.notes.find(x=>x.id===arg);if(n){showLines(n.title,noteToLines(n),n.desc);if(n.id==='n_end'){ui.modal.endBtn=true;render();}}break;}
     case 'tg':ui.modal[arg]=!ui.modal[arg];render();break;
-    case 'bnav':{const sd=sdOf(ui.modal.key),j=nextBatter(sd,ui.modal.i,+arg);sd.cur=j;const s=sd.order[j];ui.modal.no=!!s&&!sd.noSpoken.includes(s.pid);if(s&&ui.modal.no)sd.noSpoken.push(s.pid);save();ui.modal.i=j;render();break;}
+    case 'bnav':{ui.modal.intro=false;const sd=sdOf(ui.modal.key),j=nextBatter(sd,ui.modal.i,+arg);sd.cur=j;const s=sd.order[j];ui.modal.no=!!s&&!sd.noSpoken.includes(s.pid);if(s&&ui.modal.no)sd.noSpoken.push(s.pid);save();ui.modal.i=j;render();break;}
     case 'attend-save':{
       const sd=sdOf('my');
       const ids=[...document.querySelectorAll('.att:checked')].map(x=>x.value);
