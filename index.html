@@ -37,8 +37,8 @@ header.top .inn small{display:block;font-weight:400;font-size:11px;opacity:.9}
 .fbtn{position:absolute;bottom:3px;background:#fff;border:2px solid var(--g2);color:var(--g);border-radius:8px;height:28px;padding:0 10px;font-weight:700;font-size:13px}
 .fbtn.l{left:3px}.fbtn.r{right:3px;border-color:#868e96;color:#495057}
 .lower{flex:1;min-height:0;display:flex;gap:4px;margin-top:4px}
-.notecol{width:62px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
-.notecol button{border:2px solid var(--g2);background:#fff;color:var(--g);border-radius:8px;font-size:11px;font-weight:700;line-height:1.25;padding:6px 3px;word-break:break-all;min-height:44px}
+.notecol{width:76px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.notecol button{border:2px solid var(--g2);background:#fff;color:var(--g);border-radius:8px;font-size:11px;font-weight:700;line-height:1.25;padding:6px 2px;word-break:break-all;min-height:44px}
 .order{flex:1;min-width:0;min-height:0;display:grid;grid-template-rows:repeat(9,minmax(0,1fr));gap:3px}
 .orow{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:0 6px;touch-action:none;overflow:hidden;min-height:0}
 .orow.empty{border-style:dashed;background:#ffffff80;color:#999;font-size:12px}
@@ -106,6 +106,15 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
 .var{font:inherit;font-size:.8em;border:0;border-bottom:2px solid var(--acc);background:#fff3bf;text-align:center;border-radius:4px;padding:0 2px;min-width:3em;color:var(--ink)}
 .vsel{font:inherit;font-size:.8em;border:2px solid var(--acc);border-radius:6px;background:#fff3bf;color:var(--ink)}
 .aside{font-size:14px;color:var(--mut);font-weight:400}
+.btn.big{padding:14px;margin-bottom:6px;font-size:16px;text-align:left}
+.btn.ph{background:#c2255c;color:#fff}.btn.pr{background:#0b7285;color:#fff}
+.descbox{background:#e7f5ff;border-left:4px solid var(--blue);padding:8px 10px;border-radius:6px;font-size:14px;line-height:1.6;color:#0b4f8a;font-weight:400;margin-bottom:12px}
+.sbody.help p{font-size:16px;font-weight:400;line-height:1.7}
+.submode{display:flex;gap:4px;margin-bottom:6px}
+.smb{flex:1;border:2px solid #868e96;background:#fff;color:#495057;border-radius:8px;padding:10px 0;font-size:15px;font-weight:800}
+.smb.ph.on{background:#c2255c;border-color:#c2255c;color:#fff}
+.smb.pr.on{background:#0b7285;border-color:#0b7285;color:#fff}
+.btn[disabled]{opacity:.4}
 #toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:#000c;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.show{opacity:1}
 .hint{font-size:12px;color:var(--mut);padding:2px 4px}
@@ -127,16 +136,27 @@ const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 /* ===== 状態 ===== */
 function fiscalYear(d){d=d||new Date();return d.getMonth()>=3?d.getFullYear():d.getFullYear()-1;}
 function defaultNotes(){return[
- {id:'n_line',title:'スタメン発表',kind:'lineup',text:''},
- {id:'n_pre',title:'試合前の紹介（前置き）',hidden:true,text:'本日の第{試合番号}試合、{先攻チーム}対{後攻チーム}の試合開始に先立ちまして、両チームのスターティングラインアップならびにアンパイアをご紹介いたします。'},
- {id:'n_ump',title:'審判の紹介',text:'なお、この試合の審判は、球審{球審}、1塁{一塁審}、2塁{二塁審}、3塁{三塁審}、以上4氏でございます。\n試合開始まで今しばらくお待ちください。'},
- {id:'n_start',title:'試合開始',text:'只今より本日の第{試合番号}試合、{先攻チーム}対{後攻チーム}の試合を開始します。'},
- {id:'n_def',title:'守備位置の紹介',kind:'defense',text:''},
- {id:'n_water',title:'審判の給水',text:'お茶の準備ができましたので、審判員の方はお集まりください。'},
- {id:'n_call',title:'次の試合の呼び出し',text:'本日の第{次の試合番号}試合、{次の対戦チーム1}と{次の対戦チーム2}のキャプテン及び監督は、今すぐメンバー表を持って本部席へお越しください。'},
- {id:'n_end',title:'試合終了',text:'只今の試合は、{自得点}対{相手得点}で{勝利チーム}の勝利となりました。\n尚、試合終了時刻は、{現在時}時{現在分}分です。ご声援ありがとうございました。\n恐れ入りますが、両チームによりますグラウンド整備をお願い致します。\n本日の第{次の試合番号}試合は、{次の開始時}時{次の開始分}分に開始予定です。試合開始まで、今しばらくお待ちください。'}
+ {id:'n_line',title:'スタメン発表',kind:'lineup',text:'',desc:'試合開始の10分前ごろに読みます。両チームの先発メンバーを、先攻・後攻の順に紹介します。相手チームはメンバー表を見て読み上げます。'},
+ {id:'n_pre',title:'試合前の紹介（前置き）',hidden:true,text:'本日の第{試合番号}試合、{先攻チーム}対{後攻チーム}の試合開始に先立ちまして、両チームのスターティングラインアップならびにアンパイアをご紹介いたします。',desc:''},
+ {id:'n_ump',title:'審判の紹介',text:'なお、この試合の審判は、球審{球審}、1塁{一塁審}、2塁{二塁審}、3塁{三塁審}、以上4氏でございます。\n試合開始まで今しばらくお待ちください。',desc:'先発メンバーの発表のあとに読みます。審判には「さん」付けはしなくてよいです。審判の名前は黄色い欄に入力します。'},
+ {id:'n_start',title:'試合開始',text:'只今より本日の第{試合番号}試合、{先攻チーム}対{後攻チーム}の試合を開始します。',desc:'両チームが整列し、挨拶をしたあとに放送します。'},
+ {id:'n_def',title:'守備位置の紹介',kind:'defense',text:'',desc:'後攻チームが先に守るとき、試合開始の放送のあとに読みます。守備につく選手を、守備位置の順に紹介します。'},
+ {id:'n_water',title:'審判の給水',text:'お茶の準備ができましたので、審判員の方はお集まりください。',desc:'どのイニングの終了時に行うか、先に本部の人に確認しておき、そのイニングの終了時に放送します。'},
+ {id:'n_call',title:'次試合の呼び出し',text:'本日の第{次の試合番号}試合、{次の対戦チーム1}と{次の対戦チーム2}のキャプテン及び監督は、今すぐメンバー表を持って本部席へお越しください。',desc:'4回裏が終わると同時に放送します。次の試合に出る2チームのキャプテンと監督を呼び出します。'},
+ {id:'n_end',title:'試合終了',text:'只今の試合は、{自得点}対{相手得点}で{勝利チーム}の勝利となりました。\n尚、試合終了時刻は、{現在時}時{現在分}分です。ご声援ありがとうございました。\n恐れ入りますが、両チームによりますグラウンド整備をお願い致します。\n本日の第{次の試合番号}試合は、{次の開始時}時{次の開始分}分に開始予定です。試合開始まで、今しばらくお待ちください。',desc:'両チームが整列し、挨拶をしたあとに放送します。得点・終了時刻・次の試合の開始予定を伝えます。'}
 ];}
-function blank(){return{fy:fiscalYear(),players:[],teams:[],game:null,notes:defaultNotes(),notesV:3,phr:{}};}
+function upgradeNotes(){
+  if(S.notesV>=4)return;
+  const def=defaultNotes();
+  if(!S.notes||!S.notes.length||(S.notesV||0)<3)S.notes=def;
+  else def.forEach(d=>{
+    const ex=S.notes.find(n=>n.id===d.id);
+    if(!ex)S.notes.push(d);
+    else{if(ex.desc==null)ex.desc=d.desc;if(ex.title==='次の試合の呼び出し')ex.title=d.title;}
+  });
+  S.notesV=4;
+}
+function blank(){return{fy:fiscalYear(),players:[],teams:[],game:null,notes:defaultNotes(),notesV:4,phr:{}};}
 function migrate(st){
   if(!Array.isArray(st.players))st.players=[];
   (st.teams||[]).forEach(t=>{
@@ -147,7 +167,7 @@ function migrate(st){
 let S=blank();
 try{
   const r=localStorage.getItem(KEY);
-  if(r){const d0=JSON.parse(r);S=Object.assign(blank(),d0);if(d0.notesV!==3){S.notes=defaultNotes();S.notesV=3;}}
+  if(r){const d0=JSON.parse(r);S=Object.assign(blank(),d0);S.notesV=d0.notesV||0;}
   else{ // v1(叩き版)からの移行
     const o=localStorage.getItem('uguisu-v1');
     if(o){const d=JSON.parse(o);if(d.players&&d.players.length)S.teams.push({id:uid('t'),name:(d.team&&d.team.name)||'自チーム',players:d.players});if(d.notes)S.notes=d.notes;}
@@ -155,12 +175,12 @@ try{
 }catch(e){}
 // 毎年4/1に学年を繰り上げ
 migrate(S);
-if(S.notesV!==3){S.notes=defaultNotes();S.notesV=3;}
+upgradeNotes();
 if(!S.phr)S.phr={};
 (function(){if(!S.seeded){['レギュラー','ジュニア','リトル','スーパーリトル'].forEach(n=>{if(!S.teams.some(t=>t.name===n))S.teams.push({id:uid('t'),name:n,members:[]});});S.seeded=true;}})();
 (function(){const now=fiscalYear();if(S.fy<now){const diff=now-S.fy;S.players.forEach(p=>{const g=parseInt(p.grade,10);if(g)p.grade=String(g+diff);});S.fy=now;}})();
 if(S.game){S.game.side='my';if(!S.game.sides.my)S.game=null;}
-const ui={tab:'game',teamId:null,modal:null};
+const ui={tab:'game',teamId:null,modal:null,ret:null,sub:null};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 const gl=g=>{const n=parseInt(g,10);return !n?'':n>6?'卒団':n+'年';};
 
@@ -173,6 +193,7 @@ const curSd=()=>sdOf(curKey());
 const plist=sd=>{const t=teamOf(sd.teamId);return t?t.members.map(id=>S.players.find(p=>p.id===id)).filter(Boolean):[];};
 const P=(sd,id)=>plist(sd).find(p=>p.id===id);
 const tName=sd=>(teamOf(sd.teamId)||{name:'チーム'}).name;
+const aName=sd=>{const t=teamOf(sd.teamId);return t?(t.announce||t.name):'チーム';};
 const newSide=tid=>({teamId:tid,field:Object.fromEntries(POSKEYS.map(k=>[k,null])),ph:[],pr:[],order:Array(9).fill(null),base:null,used:[],cur:-1,attend:((teamOf(tid)||{members:[]}).members.filter(id=>{const p=S.players.find(x=>x.id===id);return p&&!(parseInt(p.grade,10)>6);})),noSpoken:[]});
 const isBatting=k=>(G().half==='top')===((k==='my')===G().myFirst);
 const idxInOrder=(sd,pid)=>sd.order.findIndex(s=>s&&s.pid===pid);
@@ -229,7 +250,7 @@ const clean=(h,noNo)=>{h=h.replace(/、{2,}/g,'、').replace(/、。/g,'。').re
 const noTok=p=>p.no?`背番号${esc(p.no)}。`:'';
 function varInput(k){
   const g=S.game||{},v=g.vars||{};
-  const own=g.sides?tName(g.sides.my):'自チーム',opp=v['相手']||'相手チーム';
+  const own=g.sides?aName(g.sides.my):'自チーム',opp=v['相手']||'相手チーム';
   if(k==='自チーム')return esc(own);
   if(k==='回')return String(g.inning||1);
   if(k==='表裏')return g.half==='bottom'?'裏':'表';
@@ -263,14 +284,14 @@ function lineupBlock(sd){
 function noteLines(n){return String(n.text||'').split('\n').filter(x=>x.trim()).map(t=>fill(t,{}));}
 function noteById(id){const n=S.notes.find(x=>x.id===id);return n?noteLines(n):[];}
 function lineupLines(){
-  const g=S.game,sd=sdOf('my'),own=esc(tName(sd)),opp=esc(g.vars['相手']||'相手チーム');
+  const g=S.game,sd=sdOf('my'),own=esc(aName(sd)),opp=esc(g.vars['相手']||'相手チーム');
   const mine=[`${g.myFirst?'先攻':'後攻'}、${own}。`,...lineupBlock(sd)];
   const theirs=[`${g.myFirst?'後攻':'先攻'}、${opp}。`,`<span class="aside">（${opp}のメンバー表を見て読み上げてください）</span>`];
   return [...noteById('n_pre'),...(g.myFirst?[...mine,...theirs]:[...theirs,...mine]),...noteById('n_ump')];
 }
 function defenseLines(){
   const sd=sdOf('my');
-  const L=[`まず守ります${esc(tName(sd))}の守備位置を紹介します。`];
+  const L=[`まず守ります${esc(aName(sd))}の守備位置を紹介します。`];
   POSKEYS.forEach(k=>{const p=P(sd,sd.field[k]);if(p)L.push(`${POS[k].n}、${nm(p)}。`);});
   return [...L,...noteById('n_ump')];
 }
@@ -325,7 +346,7 @@ function headerHTML(){
     const g=S.game;
     return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
     <div class="inn">${g.inning}回${g.half==='top'?'表':'裏'}<small>${isBatting('my')?'⚾ 攻撃':'守備'}（${esc(tName(sdOf('my')))}）</small></div>
-    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu">⋯</button></header>`;
+    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu" style="font-size:13px">説明・変更</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
     const t=teamOf(ui.teamId);
@@ -358,12 +379,17 @@ function mcard(p,from,sd){
   const used=sd.used.includes(p.id)&&from==='bench';
   return `<div class="mcard" data-pid="${p.id}" data-from="${from}" data-scroll="1"><span class="grip">⠿</span><div class="mc"><b>${esc(dispName(p))}${used?'<u>出場済</u>':''}</b><small>${esc(gl(p.grade))} ${p.no?'#'+esc(p.no):''}</small></div></div>`;
 }
+function nextIdx(sd){
+  const n=sd.order.length;
+  let nx=sd.cur>=0?(sd.cur+1)%n:0;
+  for(let k=0;k<n&&!sd.order[nx];k++)nx=(nx+1)%n;
+  return nx;
+}
 function rightHTML(sd){
-  const ph=sd.ph.map(id=>P(sd,id)).filter(Boolean),pr=sd.pr.map(id=>P(sd,id)).filter(Boolean);
+  const live=S.game.phase==='live';
   const bench=plist(sd).filter(p=>sd.attend.includes(p.id)&&!placed(sd,p.id)&&!(parseInt(p.grade,10)>6));
-  return `<div class="right" data-drop="bench">
-    <div class="frame ph" data-drop="ph"><h4>代打枠</h4>${ph.map(p=>mcard(p,'ph',sd)).join('')}</div>
-    <div class="frame pr" data-drop="pr"><h4>代走枠</h4>${pr.map(p=>mcard(p,'pr',sd)).join('')}</div>
+  const sub=live?`<div class="submode"><button class="smb ph ${ui.sub==='ph'?'on':''}" data-act="sub:ph">代打</button><button class="smb pr ${ui.sub==='pr'?'on':''}" data-act="sub:pr">代走</button></div>${ui.sub?`<div class="hint" style="color:#c2255c;font-weight:700">${ui.sub==='ph'?'代打':'代走'}ON：ベンチの選手を、交代される選手へドラッグ</div>`:''}`:'';
+  return `<div class="right" data-drop="bench">${sub}
     <div class="bench" data-drop="bench"><h4>ベンチ（${bench.length}）</h4>${bench.map(p=>mcard(p,'bench',sd)).join('')||'<div class="hint">全員出場中</div>'}</div></div>`;
 }
 function startScreen(){
@@ -417,7 +443,7 @@ function teamsView(){
 function settingsView(){
   return `<div class="pad form">
   <label>定型の案内文（{試合番号} {球審} {自得点} など、{ }で囲むと画面で入力できる欄になります）</label>
-  ${S.notes.map(n=>`<div class="note"><input type="text" data-nt="${n.id}" value="${esc(n.title)}" style="margin-bottom:6px;width:100%;font-size:15px;padding:6px;border:1px solid #ccc;border-radius:6px">${n.kind?'<div class="hint">自動で作る案内です（前後の文は「試合前の紹介」「審判の紹介」を編集）</div>':`<textarea data-nx="${n.id}">${esc(n.text)}</textarea><button class="btn" style="margin-top:6px;padding:6px 10px;font-size:13px" data-act="note-del:${n.id}">削除</button>`}</div>`).join('')}
+  ${S.notes.map(n=>`<div class="note"><input type="text" data-nt="${n.id}" value="${esc(n.title)}" style="margin-bottom:6px;width:100%;font-size:15px;padding:6px;border:1px solid #ccc;border-radius:6px">${n.kind?'<div class="hint">自動で作る案内です（前後の文は「試合前の紹介」「審判の紹介」を編集）</div>':`<textarea data-nx="${n.id}">${esc(n.text)}</textarea>`}<div class="hint">いつ読むか・意味の説明（読み上げません）</div><textarea data-nd="${n.id}" style="min-height:44px">${esc(n.desc||'')}</textarea>${n.kind?'':`<button class="btn" style="margin-top:6px;padding:6px 10px;font-size:13px" data-act="note-del:${n.id}">削除</button>`}</div>`).join('')}
   <button class="btn w" data-act="note-add">＋ 案内文を追加</button>
   <button class="btn w" style="margin-top:6px" data-act="notes-reset">案内文を放送マニュアルの初期状態に戻す</button>
   <label style="margin-top:22px">自動で読み上げる文の言い回し</label>
@@ -444,27 +470,68 @@ function tabsHTML(){
 function modalHTML(){
   const m=ui.modal;if(!m)return'';
   const foot=b=>`<div class="sfoot">${b}</div>`;
-  if(m.type==='lines')
-    return `<div class="sheet"><header><span>${esc(m.title)}</span></header><div class="sbody">${m.lines.map(l=>`<p>${l}</p>`).join('')}</div>${foot('<button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+  if(m.type==='lines'){
+    const desc=m.desc?`<div class="descbox">${esc(m.desc)}</div>`:'';
+    return `<div class="sheet"><header><span>${esc(m.title)}</span></header><div class="sbody">${desc}${m.lines.map(l=>`<p>${l}</p>`).join('')}</div>${foot('<button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+  }
   if(m.type==='batter'){
     const sd=sdOf(m.key);
     const intro=m.intro?`<p>${fill(phr('inning'),{})}</p>`:'';
+    const desc=m.intro?'投球練習が終わり、キャッチャーが2塁に送球したら放送します。（最初の打者に付けます）':'打席に入る打者を紹介します。背番号は、打順が一巡するまで読みます。';
     return `<div class="sheet"><header><span>${m.i+1}番</span><button class="hb" data-act="tg:intro">${m.intro?'✔ ':''}回の頭出し</button><button class="hb" data-act="tg:no">${m.no?'✔ ':''}背番号</button></header>
-    <div class="sbody">${intro}<p>${batterLine(sd,m.i,m.no)}</p></div>
+    <div class="sbody"><div class="descbox">${desc}</div>${intro}<p>${batterLine(sd,m.i,m.no)}</p></div>
     ${foot('<button class="btn" data-act="bnav:-1">◀ 前</button><button class="btn" data-act="close">閉じる</button><button class="btn g" data-act="bnav:1">次 ▶</button>')}</div>`;
   }
   if(m.type==='notes')
     return `<div class="sheet"><header><span>定型の案内</span></header><div class="sbody">${S.notes.map(n=>`<button class="btn w" style="margin-bottom:8px;text-align:left" data-act="note:${n.id}">${esc(n.title)}</button>`).join('')||'<p class="small">設定タブで追加できます</p>'}</div>${foot('<button class="btn pri" data-act="close">閉じる</button>')}</div>`;
-  if(m.type==='menu')
-    return `<div class="sheet"><header><span>メニュー</span></header><div class="sbody form">
-    <button class="btn w" style="margin-bottom:10px" data-act="m-attend">出席者を変更する</button>
-    <button class="btn w" style="margin-bottom:10px" data-act="m-edit">編成を直す（セリフなし）</button>
-    <button class="btn w" style="margin-bottom:10px" data-act="m-start">スタメン発表をもう一度</button>
-    <button class="btn w" style="margin-bottom:10px" data-act="m-last">直前の交代セリフをもう一度</button>
-    <button class="btn red w" style="margin-top:20px" data-act="m-new">この試合を終了してチーム選択へ</button>
-    </div>${foot('<button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+  if(m.type==='help'){
+    const page=m.page||'top';
+    if(page==='top')
+      return `<div class="sheet"><header><span>説明・変更</span></header><div class="sbody help">
+      <button class="btn w big" data-act="help:guide:0">📖 試合の流れ（順番に見る）</button>
+      <div class="hint">試合前から終了までの流れと、ウグイス嬢の役目を順番に確認できます。各ステップに、そのときのアナウンスボタンがあります。</div>
+      <button class="btn w big" data-act="help:howto">🖐 アプリの操作方法</button>
+      <button class="btn w big" data-act="help:change">🔧 変更・その他</button>
+      </div>${foot('<button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+    if(page==='guide'){
+      const i=Math.max(0,Math.min(GUIDE.length-1,m.step||0)),g=GUIDE[i];
+      const btns=(g.btn||[]).map(b=>`<button class="btn w ${b[2]||'g'}" style="margin-bottom:8px" data-act="${b[0]}">${esc(b[1])}</button>`).join('');
+      return `<div class="sheet"><header><span>ステップ ${i+1} / ${GUIDE.length}</span></header><div class="sbody help">
+      <h3 style="margin:0 0 6px">${esc(g.t)}</h3>
+      <div class="descbox">${esc(g.when)}</div>
+      ${g.d.map(x=>`<p>${esc(x)}</p>`).join('')}
+      ${btns}
+      </div>${foot(`<button class="btn" data-act="help:guide:${i-1}" ${i===0?'disabled':''}>◀ 前</button><button class="btn" data-act="help:top">一覧</button><button class="btn g" data-act="help:guide:${i+1}" ${i===GUIDE.length-1?'disabled':''}>次 ▶</button>`)}</div>`;
+    }
+    if(page==='howto')
+      return `<div class="sheet"><header><span>アプリの操作方法</span></header><div class="sbody help">${HOWTO.map(h=>`<h4 style="margin:14px 0 4px">${esc(h[0])}</h4><p>${esc(h[1])}</p>`).join('')}</div>${foot('<button class="btn" data-act="help:top">戻る</button><button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+    if(page==='change')
+      return `<div class="sheet"><header><span>変更・その他</span></header><div class="sbody help">
+      <button class="btn w big" data-act="m-attend">出席者を変更する</button>
+      <div class="hint">遅れて来た選手を追加するときなど。</div>
+      <button class="btn w big" data-act="m-edit">編成を直す（セリフなし）</button>
+      <div class="hint">守備位置や打順を、セリフを出さずに直します。</div>
+      <button class="btn w big" data-act="m-start">スタメン発表をもう一度</button>
+      <button class="btn w big" data-act="m-last">直前の交代セリフをもう一度</button>
+      <button class="btn red w big" style="margin-top:24px" data-act="m-new">試合を終了する（試合の情報を消去）</button>
+      <div class="hint">これを押すまで、アプリを閉じたり他のアプリを使ったりしても試合の情報は残ります。</div>
+      </div>${foot('<button class="btn" data-act="help:top">戻る</button><button class="btn pri" data-act="close">閉じる</button>')}</div>`;
+  }
+  if(m.type==='subpick'){
+    const p=P(curSd(),m.pid),o=curSd().order[m.i],op=o&&P(curSd(),o.pid);
+    return `<div class="sheet"><header><span>交代の種類</span></header><div class="sbody help">
+    <p><b>${esc(p?dispName(p):'')}</b> を <b>${esc(op?dispName(op):'')}</b> の代わりに入れます。どちらですか？</p>
+    <button class="btn w big ph" data-act="subdo:ph">代打（バッターの交代）</button>
+    <button class="btn w big pr" data-act="subdo:pr">代走（ランナーの交代）</button>
+    <div class="hint">※右の「代打」「代走」ボタンをONにしておくと、この確認は出ません。</div>
+    </div>${foot('<button class="btn" data-act="close">やめる</button>')}</div>`;
+  }
   if(m.type==='team')
-    return `<div class="sheet"><header><span>${m.id?'チーム名の変更':'チームを追加'}</span></header><div class="sbody form"><label>チーム名</label><input type="text" id="f-tname" value="${esc(m.id?teamOf(m.id).name:'')}" placeholder="例：〇〇ジャイアンツ"></div>${foot('<button class="btn" data-act="close">やめる</button><button class="btn g" data-act="team-save">保存</button>')}</div>`;
+    return `<div class="sheet"><header><span>${m.id?'チームの編集':'チームを追加'}</span></header><div class="sbody form">
+    <label>チーム名（このアプリで表示する名前）</label><input type="text" id="f-tname" value="${esc(m.id?teamOf(m.id).name:'')}" placeholder="例：レギュラー">
+    <label>アナウンスで読むチーム名</label><input type="text" id="f-tann" value="${esc(m.id?(teamOf(m.id).announce||''):'')}" placeholder="空欄なら上のチーム名を読みます">
+    <div class="hint" style="padding:6px 0">スタメン発表や攻撃開始、選手交代のセリフに使われます。</div>
+    </div>${foot('<button class="btn" data-act="close">やめる</button><button class="btn g" data-act="team-save">保存</button>')}</div>`;
   if(m.type==='pick'){
     const t=teamOf(ui.teamId);
     const cand=S.players.filter(p=>!t.members.includes(p.id));
@@ -517,7 +584,12 @@ function dropToOrder(sd,pid,i,from,key){
   const old=sd.order[i];
   let pos=fieldPosOf(sd,pid)||(sd.ph.includes(pid)?'代打':sd.pr.includes(pid)?'代走':'');
   if(from==='bench'){
-    if(isLive()&&isBatting(key)){toast('代打枠か代走枠に入れてから、打順へドラッグしてください');return false;}
+    if(isLive()&&isBatting(key)){
+      if(!old){toast('空いている打順には入れられません');return false;}
+      if(!ui.sub){ui.modal={type:'subpick',pid,i};render();return false;}
+      sd.order[i]={pid,pos:ui.sub==='ph'?'代打':'代走'};
+      return;
+    }
     pos=old?old.pos:'';
   }
   const j=idxInOrder(sd,pid);
@@ -550,7 +622,7 @@ function doDrop(pid,from,target){
   if(r===false)return;
   save();render();
 }
-function showLines(title,lines){ui.modal={type:'lines',title,lines};render();}
+function showLines(title,lines,desc){ui.modal={type:'lines',title,lines,desc:desc||''};render();}
 function openBatter(i){
   const g=S.game,k=curKey(),sd=sdOf(k),s=sd.order[i];
   sd.cur=i;
@@ -564,10 +636,11 @@ function nextBatter(sd,i,d){
   for(let k=1;k<=n;k++){const j=((i+d*k)%n+n)%n;if(sd.order[j]&&P(sd,sd.order[j].pid))return j;}
   return i;
 }
-function setBattingSide(){S.game.side='my';S.game.introPending=isBatting('my');}
+function setBattingSide(){ui.sub=null;S.game.side='my';S.game.introPending=isBatting('my');}
 
 function act(a){
   const [k,arg]=a.split(/:(.*)/);
+  if(['note','m-start','m-last','bfirst'].includes(k))ui.ret=(ui.modal&&ui.modal.type==='help')?ui.modal:null;
   switch(k){
     case 'tab':ui.tab=arg;render();break;
     case 'side':S.game.side=arg;save();render();break;
@@ -577,10 +650,14 @@ function act(a){
       save();render();break;}
     case 'half-next':{const g=S.game;if(g.half==='top')g.half='bottom';else{g.half='top';g.inning++;}setBattingSide();save();render();break;}
     case 'half-prev':{const g=S.game;if(g.half==='bottom')g.half='top';else if(g.inning>1){g.half='bottom';g.inning--;}setBattingSide();save();render();break;}
-    case 'close':ui.modal=null;render();break;
-    case 'menu':ui.modal={type:'menu'};render();break;
+    case 'close':ui.modal=ui.ret||null;ui.ret=null;render();break;
+    case 'menu':ui.modal={type:'help',page:'top'};render();break;
+    case 'help':{const pr=arg.split(':');ui.modal={type:'help',page:pr[0],step:+pr[1]||0};render();break;}
+    case 'sub':ui.sub=ui.sub===arg?null:arg;render();break;
+    case 'subdo':{const m=ui.modal,sd=curSd();sd.order[m.i]={pid:m.pid,pos:arg==='ph'?'代打':'代走'};ui.modal=null;save();render();break;}
+    case 'bfirst':openBatter(nextIdx(curSd()));break;
     case 'notes':ui.modal={type:'notes'};render();break;
-    case 'note':{const n=S.notes.find(x=>x.id===arg);if(n)showLines(n.title,noteToLines(n));break;}
+    case 'note':{const n=S.notes.find(x=>x.id===arg);if(n)showLines(n.title,noteToLines(n),n.desc);break;}
     case 'tg':ui.modal[arg]=!ui.modal[arg];render();break;
     case 'bnav':{const sd=sdOf(ui.modal.key),j=nextBatter(sd,ui.modal.i,+arg);sd.cur=j;const s=sd.order[j];ui.modal.no=!!s&&!sd.noSpoken.includes(s.pid);if(s&&ui.modal.no)sd.noSpoken.push(s.pid);save();ui.modal.i=j;render();break;}
     case 'attend-save':{
@@ -588,31 +665,33 @@ function act(a){
       const ids=[...document.querySelectorAll('.att:checked')].map(x=>x.value);
       plist(sd).forEach(p=>{if(placed(sd,p.id)&&!ids.includes(p.id))ids.push(p.id);});
       sd.attend=ids;S.game.attending=false;save();render();break;}
-    case 'm-attend':S.game.attending=true;ui.modal=null;save();render();break;
+    case 'm-attend':S.game.attending=true;ui.modal=null;ui.ret=null;save();render();break;
     case 'notes-reset':if(confirm('案内文を放送マニュアルの初期状態に戻します（編集した内容は消えます）。よろしいですか？')){S.notes=defaultNotes();save();render();}break;
     case 'phr-reset':if(confirm('言い回しを初期状態に戻します。よろしいですか？')){S.phr={};save();render();}break;
     case 'start':{
       const g=S.game;
-      if(!g.started){g.started=true;g.phase='live';snapshotCommit(sdOf('my'));setBattingSide();const L=lineupLines();g.last={title:'スタメン発表',lines:L};save();showLines('スタメン発表',L);}
+      if(!g.started){g.started=true;g.phase='live';snapshotCommit(sdOf('my'));setBattingSide();const L=lineupLines();const dsc=(S.notes.find(x=>x.id==='n_line')||{}).desc||'';g.last={title:'スタメン発表',lines:L,desc:dsc};save();showLines('スタメン発表',L,dsc);}
       else{g.phase='live';snapshotCommit(sdOf('my'));save();render();}
       break;}
-    case 'undo':{const sd=curSd();sd.field=clone(sd.base.field);sd.ph=clone(sd.base.ph);sd.pr=clone(sd.base.pr);sd.order=clone(sd.base.order);save();render();break;}
+    case 'undo':{ui.sub=null;const sd=curSd();sd.field=clone(sd.base.field);sd.ph=clone(sd.base.ph);sd.pr=clone(sd.base.pr);sd.order=clone(sd.base.order);save();render();break;}
     case 'done':{
-      const sd=curSd(),L=buildChanges(sd);
+      ui.sub=null;const sd=curSd(),L=buildChanges(sd);
       snapshotCommit(sd);
       if(!L.length){save();render();toast('セリフなし（枠の移動のみ）');break;}
-      S.game.last={title:'選手交代',lines:L};save();showLines('選手交代',L);break;}
-    case 'm-edit':S.game.phase='setup';ui.modal=null;save();render();break;
-    case 'm-start':showLines('スタメン発表',lineupLines());break;
-    case 'm-last':if(S.game.last)showLines(S.game.last.title,S.game.last.lines);else toast('まだありません');break;
+      const dsc='交代の入れ替えがすべて終わってから読みます。名前は交代される選手→入る選手の順に読みます。';S.game.last={title:'選手交代',lines:L,desc:dsc};save();showLines('選手交代',L,dsc);break;}
+    case 'm-edit':S.game.phase='setup';ui.modal=null;ui.ret=null;save();render();break;
+    case 'm-start':showLines('スタメン発表',lineupLines(),(S.notes.find(x=>x.id==='n_line')||{}).desc);break;
+    case 'm-last':if(S.game.last)showLines(S.game.last.title,S.game.last.lines,S.game.last.desc);else toast('まだありません');break;
     case 'm-new':
-      if(confirm('この試合の編成と進行を終了します（チーム・選手の登録は残ります）。よろしいですか？')){S.game=null;ui.modal=null;save();render();}
+      if(confirm('試合を終了して、この試合の情報（編成・打順・入力した内容）を消去します。よろしいですか？\n\n※チーム・選手の登録は残ります。')){S.game=null;ui.modal=null;ui.ret=null;ui.sub=null;save();render();}
       break;
     case 'team-add':ui.modal={type:'team',id:null};render();break;
     case 'team-rename':ui.modal={type:'team',id:ui.teamId};render();break;
     case 'team-save':{
       const v=$('#f-tname').value.trim();if(!v){toast('チーム名を入力してください');break;}
       if(ui.modal.id)teamOf(ui.modal.id).name=v;else S.teams.push({id:uid('t'),name:v,members:[]});
+      const tm=ui.modal.id?teamOf(ui.modal.id):S.teams[S.teams.length-1];
+      tm.announce=$('#f-tann').value.trim();
       ui.modal=null;save();render();break;}
     case 'team-open':ui.teamId=arg;render();break;
     case 'team-back':ui.teamId=null;render();break;
@@ -679,6 +758,7 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.matches&&t.matches('.var,.vsel')){setVar(t);return;}
   if(t.dataset&&t.dataset.ph){S.phr[t.dataset.ph]=t.value;save();return;}
+  if(t.dataset&&t.dataset.nd){const n=S.notes.find(x=>x.id===t.dataset.nd);if(n){n.desc=t.value;save();}return;}
   if(t.id==='g-my')ui.pickMy=t.value;
   else if(t.dataset&&t.dataset.nt){const n=S.notes.find(x=>x.id===t.dataset.nt);if(n){n.title=t.value;save();}}
   else if(t.dataset&&t.dataset.nx){const n=S.notes.find(x=>x.id===t.dataset.nx);if(n){n.text=t.value;save();}}
@@ -748,6 +828,75 @@ if(S.game){
   if(!sd.attend)sd.attend=plist(sd).map(p=>p.id);
   if(!sd.noSpoken)sd.noSpoken=[];
 }
+/* ===== 説明・ガイド ===== */
+const GUIDE=[
+ {t:'試合前の準備',when:'試合が始まる前（スタメン発表の前）',
+  d:['今日来ている選手を「出席者」に選び、ベンチに入れます。','ベンチ → 守備位置 → 打順の順にドラッグして、先発メンバーを決めます。','相手チームのメンバー表も、本部から受け取っておきます。'],
+  btn:[['m-attend','出席者を変更する','']]},
+ {t:'スタメン発表（試合開始10分前）',when:'試合開始の10分前ごろ',
+  d:['先発メンバーが決まったら、画面下の「スタメン確定 → 発表」を押すと、両チームの先発メンバーと審判の紹介が出ます。','相手チームの部分は、メンバー表を見て読み上げます。','審判の名前は、黄色い欄に入力します（審判には「さん」付けはしません）。'],
+  btn:[['note:n_line','スタメン発表を開く'],['note:n_ump','審判の紹介を開く']]},
+ {t:'試合開始（整列・挨拶のあと）',when:'両チームが整列し、挨拶をしたあと',
+  d:['試合開始の放送をします。','自チームが後攻で先に守るときは、続けて守備位置の紹介も読みます。'],
+  btn:[['note:n_start','試合開始を開く'],['note:n_def','守備位置の紹介を開く（後攻のとき）']]},
+ {t:'攻撃開始（各回の最初の打者）',when:'投球練習が終わり、キャッチャーが2塁に送球したら',
+  d:['「○回の表（裏）、○○の攻撃は、」に続けて、先頭の打者を紹介します。','攻撃に入ると、打者紹介の画面に自動で「回の頭出し」が付きます。','前の回の続きから始まる場合は、「次」と表示されている打者を読みます。'],
+  btn:[['bfirst','次の打者を紹介する']]},
+ {t:'打席ごとの打者紹介',when:'打者が打席に入るたび',
+  d:['打順のカードをタップすると、その打者の紹介が出ます。','背番号は、打順が一巡するまで読みます（一巡後は自動で出ません。画面の「背番号」ボタンで入り切りできます）。','「次 ▶」ボタンで次の打者に進めます。青が「今の打者」、黄色が「次の打者」です。']},
+ {t:'選手交代',when:'交代が告げられ、入れ替えが済んだとき',
+  d:['【代打・代走】右の「代打」または「代走」ボタンをONにして、ベンチの選手を、交代される打者へドラッグします（交代される選手の名前も読みます）。','【守備交代】ベンチの選手を、交代される選手の守備位置へドラッグします。','【ポジション変更】守備位置のカードどうしをドラッグで入れ替えます。','複数人の入れ替えがあるときは、全部終わってから画面下の「完了 → セリフ」を押します。間違えたら「やり直し」。'],
+  btn:[['m-last','直前の交代セリフをもう一度見る','']]},
+ {t:'審判の給水',when:'本部で決められたイニングの終了時',
+  d:['どのイニングの終了時に行うかは、あらかじめ本部の人に確認しておきます。'],
+  btn:[['note:n_water','審判の給水を開く']]},
+ {t:'次試合の呼び出し',when:'4回裏の終了と同時',
+  d:['次の試合に出る2チームのキャプテンと監督を、本部席へ呼び出します。','チーム名は黄色い欄に入力します。'],
+  btn:[['note:n_call','次試合の呼び出しを開く']]},
+ {t:'試合終了',when:'両チームが整列し、挨拶をしたあと',
+  d:['得点・終了時刻・次の試合の開始予定を放送します。','放送が終わったら、下の「試合を終了する」を押すと、この試合の情報が消えます（押すまでは残ります）。'],
+  btn:[['note:n_end','試合終了を開く'],['m-new','試合を終了する（試合の情報を消去）','red']]}
+];
+const HOWTO=[
+ ['選手の登録','「チーム・選手」タブでチームを選び、「＋選手を追加」で名前・フリガナ・学年・背番号を登録します。選手は複数のチームに入れられます。学年は毎年4/1に自動で1つ上がります。'],
+ ['チーム名','チームを開いて「名前変更」を押すと、アプリに表示する名前と、アナウンスで読むチーム名を別々に決められます。'],
+ ['出席者とベンチ','試合を始めると、まず出席者を選びます。選ばれた選手が右側の「ベンチ」に並びます。'],
+ ['ドラッグのしかた','ベンチのカードは、左端の「⠿」をつかむと、どの方向にもすぐ動かせます。カードを長押ししても動かせます。右の欄は、上下になぞるとスクロールします。'],
+ ['編成（試合前）','ベンチのカードを守備位置へドラッグし、そのカードを打順の枠へドラッグするとコピーされます。打順の枠に別の選手を重ねると置き換わります。'],
+ ['スタメン確定','編成ができたら、画面下の「スタメン確定 → 発表」を押します。'],
+ ['打者紹介','打順のカードをタップします。画面の「前」「次」で打者を移動できます。青が今の打者、黄色が次の打者です。次のイニングでも続きから表示されます。'],
+ ['攻守の切り替え','上の「◀」「▶」で、表・裏（攻撃・守備）を切り替えます。'],
+ ['代打・代走','右の「代打」「代走」ボタンをONにして、ベンチの選手を、交代される打者のカードへドラッグします。ONにしないでドラッグすると、種類を選ぶ画面が出ます。'],
+ ['守備交代・ポジション変更','ベンチの選手を守備位置へドラッグすると守備交代です。守備位置のカードどうしを重ねると入れ替わります。代打で出た選手は、打順のカードを守備位置へドラッグするとそのまま守備につきます。'],
+ ['完了とやり直し','入れ替えると、変わったカードにオレンジの枠が付きます。全部終わったら「完了 → セリフ」でまとめて読む文が出ます。間違えたら「やり直し」で、直前の完了時点に戻ります。'],
+ ['案内ボタン（左端）','試合の進行に合わせた放送の文が並んでいます。黄色い欄に、得点や審判の名前を入力します。文面は「設定」タブで編集できます。'],
+ ['試合の情報の保存','試合の情報は、この機器に自動で保存されます。「試合を終了する」を押すまで消えません。']
+];
+/* ===== 戻るボタンの階層制御・終了時の確認 ===== */
+let leaving=false;
+function armBack(){try{history.pushState({a:1},'');}catch(e){}}
+try{history.replaceState({a:0},'');armBack();}catch(e){}
+function goUp(){
+  if(ui.modal){
+    const m=ui.modal;
+    if(m.type==='help'&&m.page&&m.page!=='top'){ui.modal={type:'help',page:'top'};}
+    else{ui.modal=ui.ret||null;ui.ret=null;}
+    return true;
+  }
+  if(ui.tab==='players'&&ui.teamId){ui.teamId=null;return true;}
+  if(ui.tab!=='game'){ui.tab='game';return true;}
+  return false;
+}
+window.addEventListener('popstate',()=>{
+  if(leaving)return;
+  if(goUp()){render();armBack();return;}
+  if(confirm('アプリを閉じますか？\n\n試合の情報は保存されています（「試合を終了する」を押すまで消えません）。')){
+    leaving=true;history.back();
+  }else armBack();
+});
+window.addEventListener('beforeunload',e=>{if(S.game&&!leaving){e.preventDefault();e.returnValue='';}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 render();
 </script>
