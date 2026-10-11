@@ -115,6 +115,12 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
 .smb.ph.on{background:#c2255c;border-color:#c2255c;color:#fff}
 .smb.pr.on{background:#0b7285;border-color:#0b7285;color:#fff}
 .btn[disabled]{opacity:.4}
+.mk{font-style:normal;text-decoration:none;font-size:11px;font-weight:800;color:#fff;border-radius:50%;width:20px;height:20px;display:grid;place-items:center;flex-shrink:0}
+.mk.ph{background:#c2255c}.mk.pr{background:#0b7285}
+.clubbox{background:#fff;border:2px solid var(--g2);border-radius:12px;padding:8px 10px;margin-bottom:12px}
+.clubrow{display:flex;align-items:center;gap:8px}
+.clubrow b{flex:1;font-size:18px}
+.clubrow .btn{padding:8px 16px}
 #toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:#000c;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.show{opacity:1}
 .hint{font-size:12px;color:var(--mut);padding:2px 4px}
@@ -156,12 +162,13 @@ function upgradeNotes(){
   });
   S.notesV=4;
 }
-function blank(){return{fy:fiscalYear(),players:[],teams:[],game:null,notes:defaultNotes(),notesV:4,phr:{}};}
+function blank(){return{fy:fiscalYear(),players:[],teams:[],game:null,notes:defaultNotes(),notesV:4,phr:{},club:''};}
 function migrate(st){
   if(!Array.isArray(st.players))st.players=[];
   (st.teams||[]).forEach(t=>{
     if(Array.isArray(t.players)){t.members=t.members||[];t.players.forEach(p=>{if(!st.players.some(x=>x.id===p.id))st.players.push(p);if(!t.members.includes(p.id))t.members.push(p.id);});delete t.players;}
     if(!t.members)t.members=[];
+    t.members=[...new Set(t.members)];
   });
 }
 let S=blank();
@@ -193,7 +200,7 @@ const curSd=()=>sdOf(curKey());
 const plist=sd=>{const t=teamOf(sd.teamId);return t?t.members.map(id=>S.players.find(p=>p.id===id)).filter(Boolean):[];};
 const P=(sd,id)=>plist(sd).find(p=>p.id===id);
 const tName=sd=>(teamOf(sd.teamId)||{name:'チーム'}).name;
-const aName=sd=>{const t=teamOf(sd.teamId);return t?(t.announce||t.name):'チーム';};
+const aName=sd=>{const t=teamOf(sd.teamId);return S.club||(t?(t.announce||t.name):'チーム');};
 const newSide=tid=>({teamId:tid,field:Object.fromEntries(POSKEYS.map(k=>[k,null])),ph:[],pr:[],order:Array(9).fill(null),base:null,used:[],cur:-1,attend:((teamOf(tid)||{members:[]}).members.filter(id=>{const p=S.players.find(x=>x.id===id);return p&&!(parseInt(p.grade,10)>6);})),noSpoken:[]});
 const isBatting=k=>(G().half==='top')===((k==='my')===G().myFirst);
 const idxInOrder=(sd,pid)=>sd.order.findIndex(s=>s&&s.pid===pid);
@@ -372,7 +379,9 @@ function orderHTML(sd,live){
     const chg=live&&sd.base&&JSON.stringify(o)!==JSON.stringify(s);
     if(!p)return `<div class="orow empty" data-drop="order:${i}"><em>${i+1}</em>空き</div>`;
     const cur=sd.cur===i,nx=nxt===i&&!cur;
-    return `<div class="orow ${chg?'chg':''} ${cur?'cur':''} ${nx?'nxt':''}" data-drop="order:${i}" data-pid="${p.id}" data-from="order:${i}" data-tap="batter:${i}"><em>${i+1}</em><small>${esc(lab(s.pos)||'守備未定')}</small><b>${esc(dispName(p))}</b>${cur?'<i>今</i>':nx?'<i>次</i>':''}<span>${p.no?'#'+esc(p.no):''}</span></div>`;
+    const o2=(o&&o.pid===s.pid)?o.pos:'';
+    const mk=(s.pos==='代打'||o2==='代打')?'<u class="mk ph">打</u>':(s.pos==='代走'||o2==='代走')?'<u class="mk pr">走</u>':'';
+    return `<div class="orow ${chg?'chg':''} ${cur?'cur':''} ${nx?'nxt':''}" data-drop="order:${i}" data-pid="${p.id}" data-from="order:${i}" data-tap="batter:${i}"><em>${i+1}</em><small>${esc(lab(s.pos)||'守備未定')}</small>${mk}<b>${esc(dispName(p))}</b>${cur?'<i>今</i>':nx?'<i>次</i>':''}<span>${p.no?'#'+esc(p.no):''}</span></div>`;
   }).join('')}</div>`;
 }
 function mcard(p,from,sd){
@@ -415,6 +424,23 @@ function gameView(){
   const g=S.game,sd=sdOf('my'),live=g.phase==='live';
   return `<div class="game"><div class="left">${fieldHTML(sd,live)}<div class="lower"><div class="notecol">${S.notes.filter(n=>!n.hidden).map(n=>`<button data-act="note:${n.id}">${esc(n.title)}</button>`).join('')||'<span class="hint">案内なし</span>'}</div>${orderHTML(sd,live)}</div></div>${rightHTML(sd)}</div>`;
 }
+function dupGroups(){
+  const m={};
+  S.players.forEach(p=>{const k=(p.sei||'').trim()+'|'+(p.mei||'').trim();(m[k]=m[k]||[]).push(p);});
+  return Object.values(m).filter(g=>g.length>1);
+}
+function dupBox(){
+  const g=dupGroups();if(!g.length)return'';
+  return `<div class="note" style="border-color:#e8590c"><div class="hint" style="color:#e8590c;font-weight:700">同じ名前の選手が重複しています</div>${g.map((x,i)=>`<div class="prow" style="margin-top:6px"><div class="nm">${esc(x[0].sei)}${esc(x[0].mei||'')}（${x.length}件）</div><button class="btn" data-act="merge:${i}">1人にまとめる</button></div>`).join('')}<div class="hint">別々の人（同じ苗字の兄弟など）の場合は、選手の編集で「名前」欄を入れて区別してください。</div></div>`;
+}
+function mergePlayers(keep,others){
+  let j=JSON.stringify({g:S.game,t:S.teams});
+  others.forEach(o=>{j=j.split('"'+o+'"').join('"'+keep+'"');});
+  const r=JSON.parse(j);S.game=r.g;S.teams=r.t;
+  S.players=S.players.filter(p=>!others.includes(p.id));
+  S.teams.forEach(t=>{t.members=[...new Set(t.members)];});
+  if(S.game)Object.values(S.game.sides).forEach(sd=>{sd.attend=[...new Set(sd.attend||[])];sd.used=[...new Set(sd.used||[])];sd.noSpoken=[...new Set(sd.noSpoken||[])];});
+}
 function playerRows(list,showTeams){
   return list.map(p=>{
     const ts=showTeams?S.teams.filter(t=>t.members.includes(p.id)).map(t=>t.name).join('・'):'';
@@ -423,12 +449,12 @@ function playerRows(list,showTeams){
 }
 function teamsView(){
   if(!ui.teamId){
-    return `<div class="pad">${S.teams.map(t=>`<div class="trow" data-act="team-open:${t.id}"><span>${esc(t.name)}<br><small>${t.members.length}人</small></span>▶</div>`).join('')}
+    return `<div class="pad"><div class="clubbox"><div class="hint">読み上げるチーム名（クラブ名）</div><div class="clubrow"><b>${esc(S.club||'（未設定）')}</b><button class="btn g" data-act="club-edit">編集</button></div></div>${S.teams.map(t=>`<div class="trow" data-act="team-open:${t.id}"><span>${esc(t.name)}<br><small>${t.members.length}人</small></span>▶</div>`).join('')}
     <div class="trow" style="background:#ebe8dc" data-act="team-open:ALL"><span>全選手<br><small>${S.players.length}人（チームをまたいで管理）</small></span>▶</div>
     <button class="btn g w" style="margin-top:6px" data-act="team-add">＋ チームを追加</button></div>`;
   }
   if(ui.teamId==='ALL'){
-    return `<div class="pad"><button class="btn g w" data-act="player-add">＋ 選手を追加</button></div><div class="pad" style="padding-top:0">${playerRows(S.players,true)||'<div class="hint">まだ選手がいません</div>'}</div>`;
+    return `<div class="pad"><button class="btn g w" data-act="player-add">＋ 選手を追加</button></div><div class="pad" style="padding-top:0">${dupBox()}${playerRows(S.players,true)||'<div class="hint">まだ選手がいません</div>'}</div>`;
   }
   const t=teamOf(ui.teamId);if(!t){ui.teamId=null;return teamsView();}
   const list=t.members.map(id=>S.players.find(p=>p.id===id)).filter(Boolean);
@@ -517,6 +543,11 @@ function modalHTML(){
       <div class="hint">これを押すまで、アプリを閉じたり他のアプリを使ったりしても試合の情報は残ります。</div>
       </div>${foot('<button class="btn" data-act="help:top">戻る</button><button class="btn pri" data-act="close">閉じる</button>')}</div>`;
   }
+  if(m.type==='club')
+    return `<div class="sheet"><header><span>読み上げるチーム名</span></header><div class="sbody form">
+    <label>クラブ名（スタメン発表・攻撃開始・選手交代で読みます）</label><input type="text" id="f-club" value="${esc(S.club||'')}" placeholder="例：〇〇クラブ">
+    <div class="hint" style="padding:8px 0">レギュラー・ジュニアなど、どのチームを選んでも、この名前で読み上げます。空欄のときは、各チームの名前を読みます。</div>
+    </div>${foot('<button class="btn" data-act="close">やめる</button><button class="btn g" data-act="club-save">保存</button>')}</div>`;
   if(m.type==='subpick'){
     const p=P(curSd(),m.pid),o=curSd().order[m.i],op=o&&P(curSd(),o.pid);
     return `<div class="sheet"><header><span>交代の種類</span></header><div class="sbody help">
@@ -529,9 +560,7 @@ function modalHTML(){
   if(m.type==='team')
     return `<div class="sheet"><header><span>${m.id?'チームの編集':'チームを追加'}</span></header><div class="sbody form">
     <label>チーム名（このアプリで表示する名前）</label><input type="text" id="f-tname" value="${esc(m.id?teamOf(m.id).name:'')}" placeholder="例：レギュラー">
-    <label>アナウンスで読むチーム名</label><input type="text" id="f-tann" value="${esc(m.id?(teamOf(m.id).announce||''):'')}" placeholder="空欄なら上のチーム名を読みます">
-    <div class="hint" style="padding:6px 0">スタメン発表や攻撃開始、選手交代のセリフに使われます。</div>
-    </div>${foot('<button class="btn" data-act="close">やめる</button><button class="btn g" data-act="team-save">保存</button>')}</div>`;
+      </div>${foot('<button class="btn" data-act="close">やめる</button><button class="btn g" data-act="team-save">保存</button>')}</div>`;
   if(m.type==='pick'){
     const t=teamOf(ui.teamId);
     const cand=S.players.filter(p=>!t.members.includes(p.id));
@@ -690,8 +719,6 @@ function act(a){
     case 'team-save':{
       const v=$('#f-tname').value.trim();if(!v){toast('チーム名を入力してください');break;}
       if(ui.modal.id)teamOf(ui.modal.id).name=v;else S.teams.push({id:uid('t'),name:v,members:[]});
-      const tm=ui.modal.id?teamOf(ui.modal.id):S.teams[S.teams.length-1];
-      tm.announce=$('#f-tann').value.trim();
       ui.modal=null;save();render();break;}
     case 'team-open':ui.teamId=arg;render();break;
     case 'team-back':ui.teamId=null;render();break;
@@ -700,6 +727,9 @@ function act(a){
         if(S.game&&(S.game.myId===ui.teamId))S.game=null;
         S.teams=S.teams.filter(t=>t.id!==ui.teamId);ui.teamId=null;save();render();
       }break;
+    case 'club-edit':ui.modal={type:'club'};render();break;
+    case 'club-save':S.club=$('#f-club').value.trim();ui.modal=null;save();render();break;
+    case 'merge':{const g=dupGroups()[+arg];if(g&&confirm('「'+g[0].sei+(g[0].mei||'')+'」を1人にまとめます（所属チームや試合の編成もまとめます）。よろしいですか？')){mergePlayers(g[0].id,g.slice(1).map(p=>p.id));save();render();}break;}
     case 'team-pick':ui.modal={type:'pick'};render();break;
     case 'pick-save':{const t=teamOf(ui.teamId);document.querySelectorAll('.pk:checked').forEach(x=>{if(!t.members.includes(x.value))t.members.push(x.value);});ui.modal=null;save();render();break;}
     case 'player-add':ui.modal={type:'player',pid:null};render();break;
@@ -707,6 +737,20 @@ function act(a){
     case 'player-save':{
       const v=id=>$('#'+id).value.trim();
       if(!v('f-sei')){toast('苗字を入力してください');break;}
+      {
+        const key=v('f-sei')+'|'+v('f-mei');
+        const dup=S.players.find(p=>p.id!==ui.modal.pid&&((p.sei||'').trim()+'|'+(p.mei||'').trim())===key);
+        if(dup){
+          if(!ui.modal.pid){
+            if(confirm('「'+dup.sei+(dup.mei||'')+'」はすでに登録されています。\n登録済みの選手を、選んだチームに追加しますか？')){
+              const ch=[...document.querySelectorAll('.tm:checked')].map(x=>x.value);
+              S.teams.forEach(t=>{if(ch.includes(t.id)&&!t.members.includes(dup.id))t.members.push(dup.id);});
+              ui.modal=null;save();render();
+            }
+          }else toast('同じ名前の選手がすでにいます。別の人なら「名前」欄で区別してください');
+          break;
+        }
+      }
       const d={sei:v('f-sei'),seiK:v('f-seiK'),mei:v('f-mei'),meiK:v('f-meiK'),grade:v('f-grade'),no:v('f-no'),hon:$('#f-hon').value,full:$('#f-full').checked};
       let pl;
       if(ui.modal.pid){pl=S.players.find(p=>p.id===ui.modal.pid);Object.assign(pl,d);}
@@ -721,15 +765,15 @@ function act(a){
     case 'sample':{
       const t=teamOf(ui.teamId);
       const S0=[['山田','やまだ','太郎','たろう',6,10],['佐藤','さとう','健太','けんた',6,2],['鈴木','すずき','翔','しょう',6,3],['高橋','たかはし','大輝','だいき',5,4],['田中','たなか','蓮','れん',5,5],['伊藤','いとう','陽太','ようた',5,6],['渡辺','わたなべ','颯','はやて',4,7],['中村','なかむら','美咲','みさき',4,8,'さん'],['小林','こばやし','悠斗','ゆうと',4,9],['加藤','かとう','樹','いつき',4,11],['吉田','よしだ','陸','りく',3,12],['山本','やまもと','拓海','たくみ',3,13]];
-      S0.forEach(r=>{const p={id:uid('s'),sei:r[0],seiK:r[1],mei:r[2],meiK:r[3],grade:String(r[4]),no:String(r[5]),hon:r[6]||'くん',full:false};S.players.push(p);if(t)t.members.push(p.id);});
+      S0.forEach(r=>{let p=S.players.find(x=>x.sei===r[0]&&(x.mei||'')===r[2]);if(!p){p={id:uid('s'),sei:r[0],seiK:r[1],mei:r[2],meiK:r[3],grade:String(r[4]),no:String(r[5]),hon:r[6]||'くん',full:false};S.players.push(p);}if(t&&!t.members.includes(p.id))t.members.push(p.id);});
       save();render();break;}
     case 'note-add':S.notes.push({id:uid('n'),title:'新しい案内',text:''});save();render();break;
     case 'note-del':S.notes=S.notes.filter(n=>n.id!==arg);save();render();break;
-    case 'export':$('#s-bk').value=JSON.stringify({players:S.players,teams:S.teams,notes:S.notes,fy:S.fy});break;
+    case 'export':$('#s-bk').value=JSON.stringify({players:S.players,teams:S.teams,notes:S.notes,fy:S.fy,club:S.club});break;
     case 'import':{
       try{const d=JSON.parse($('#s-bk').value);if(!Array.isArray(d.teams))throw 0;
         if(confirm('チーム・選手・案内文を上書きします。よろしいですか？')){
-          S.teams=d.teams;S.players=Array.isArray(d.players)?d.players:[];migrate(S);if(d.notes)S.notes=d.notes;if(d.fy)S.fy=d.fy;S.game=null;ui.teamId=null;
+          S.teams=d.teams;S.players=Array.isArray(d.players)?d.players:[];migrate(S);if(d.notes)S.notes=d.notes;if(d.fy)S.fy=d.fy;if(d.club!=null)S.club=d.club;S.game=null;ui.teamId=null;
           save();render();toast('読み込みました');}
       }catch(e){toast('データの形式が正しくありません');}
       break;}
