@@ -36,11 +36,14 @@ header.top .inn small{display:block;font-weight:400;font-size:11px;opacity:.9}
 .fslot.empty{background:#ffffff80;border-style:dashed}
 .fbtn{position:absolute;bottom:3px;background:#fff;border:2px solid var(--g2);color:var(--g);border-radius:8px;height:28px;padding:0 10px;font-weight:700;font-size:13px}
 .fbtn.l{left:3px}.fbtn.r{right:3px;border-color:#868e96;color:#495057}
-.order{flex:1;min-height:0;display:grid;grid-template-rows:repeat(9,minmax(0,1fr));gap:3px;margin-top:4px}
+.lower{flex:1;min-height:0;display:flex;gap:4px;margin-top:4px}
+.notecol{width:62px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.notecol button{border:2px solid var(--g2);background:#fff;color:var(--g);border-radius:8px;font-size:11px;font-weight:700;line-height:1.25;padding:6px 3px;word-break:break-all;min-height:44px}
+.order{flex:1;min-width:0;min-height:0;display:grid;grid-template-rows:repeat(9,minmax(0,1fr));gap:3px}
 .orow{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:0 6px;touch-action:none;overflow:hidden;min-height:0}
 .orow.empty{border-style:dashed;background:#ffffff80;color:#999;font-size:12px}
 .orow em{font-style:normal;background:var(--g);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
-.orow small{font-size:10px;color:var(--g2);font-weight:700;min-width:56px;white-space:nowrap}
+.orow small{font-size:9px;color:var(--g2);font-weight:700;min-width:48px;white-space:nowrap}
 .orow b{font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .orow span{font-size:10px;color:var(--mut)}
 .orow i{font-style:normal;font-size:10px;font-weight:700;border-radius:4px;padding:0 5px}
@@ -240,7 +243,7 @@ function headerHTML(){
     const g=S.game,bk=g.half==='top'?firstKey():(firstKey()==='my'?'opp':'my');
     return `<header class="top"><button class="hb" data-act="half-prev">◀</button>
     <div class="inn">${g.inning}回${g.half==='top'?'表':'裏'}<small>${esc(tName(sdOf(bk)))}の攻撃</small></div>
-    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="notes">案内</button><button class="hb" data-act="menu">⋯</button></header>`;
+    <button class="hb" data-act="half-next">▶</button><button class="hb" data-act="menu">⋯</button></header>`;
   }
   if(ui.tab==='players'&&ui.teamId){
     const t=teamOf(ui.teamId);
@@ -294,7 +297,7 @@ function gameView(){
   if(!S.game)return startScreen();
   const g=S.game,key=g.side,sd=sdOf(key),live=g.phase==='live';
   const tabs=['my','opp'].map(k=>{const s=sdOf(k);return `<button class="${k===key?'on':''}" data-act="side:${k}">${esc(tName(s))}${dirty(s)?' ●':''}<small>${isBatting(k)?'⚾ 攻撃':'守備'}</small></button>`;}).join('');
-  return `<div class="sidetabs">${tabs}</div><div class="game"><div class="left">${fieldHTML(sd,live)}${orderHTML(sd,live)}</div>${rightHTML(sd)}</div>`;
+  return `<div class="sidetabs">${tabs}</div><div class="game"><div class="left">${fieldHTML(sd,live)}<div class="lower"><div class="notecol">${S.notes.map(n=>`<button data-act="note:${n.id}">${esc(n.title)}</button>`).join('')||'<span class="hint">案内なし</span>'}</div>${orderHTML(sd,live)}</div></div>${rightHTML(sd)}</div>`;
 }
 function teamsView(){
   if(!ui.teamId){
